@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Carte Covid Région Casa_Settat</title>
+<style>
+	.container {
+    display: table;
+	}
+	.centered {
+ 		display: table-cell;
+     	height: 10px;
+        width: 1100px;
+    	text-align: center;
+    	vertical-align: middle;
+    }
+	.Nom_Provin-border {
+		fill: none;
+		stroke: rgb(211, 29, 29);
+		stroke-opacity: 1;
+    	stroke-width: 1;
+    	stroke-linecap: round;
+    	stroke-linejoin: round;
+		pointer-events: none;
+	}
+	.slider {
+   		position: absolute;
+}	
+	.legendTitle {
+ 	 font-size: 1.2em;
+	}
+</style>
+<html>
+	<body>
+		<div class="container">
+			<div class="centered">
+				<h1>Carte de l'évolution de la situation pandémique dans les provinces de la région Casa-Settat</h1>
+			</div>
+		</div>
+		
+		<div class="slider">
+			<input id="slider" type="range" min= "1" max= "7" value="1" step="1" />
+			<label for="slider">du 25 novembre 2021 au 1 décembre 2021</label>
+		</div>
+
+		<script src="https://d3js.org/d3.v3.min.js"></script>
+		<script src="https://d3js.org/topojson.v1.min.js"></script>
+		<script src="https://raw.github.com/fryn/html5slider/master/html5slider.js"></script>
+		<script src = "https://cdnjs.cloudflare.com/ajax/libs/d3-legend/1.13.0/d3-legend.min.js"></script>
+		<script type="text/javascript">
+        
+onload = function() {
+  var $ = function(id) { return document.getElementById(id); };
+  $('slider').oninput = function() { $('range').innerHTML = this.value; };
+  $('slider').oninput();
+};
+
+	</script>
+		<script>
+					
+			var width = 1200, height = 500;
+
+			var value;
+			
+			var color = d3.scale.threshold().domain([1,10,20,50]).range(["#1a9850","#91cf60","#d9ef8b", "#fee08b","#fc8d59"]);
+
+			var projection = d3.geo.conicConformal().parallels([-90 + 00 / 60, 90 + 00 / 60]).rotate([-05 + 24 / 60, 0 + 0 / 60]).translate([width / 2, height / 2]);
+
+			var path = d3.geo.path().projection(projection);
+
+			var svg = d3.select("body").append("svg").attr("width", width).attr("height", height);
+			
+			d3.json("region_casa_settat.json", function(error, ok) {
+				var provincesnew = topojson.feature(ok, ok.objects.provincesnew);
+
+				projection.scale(1).translate([0, 0]);
+
+				var b = path.bounds(provincesnew), s = .95 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height), t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2];
+				
+				projection.scale(s).translate(t);
+
+				svg.selectAll("path").data(provincesnew.features.filter(function(d) {
+					return d.id;
+				})).enter().append("path").attr("class", "Nom_Provin").attr("d", path).style("fill", function(d) {
+					return color(d.properties.d);
+				}).append("title").text(function(d) {
+					return " Province de " + d.properties.Nom_Provin;
+				});
+
+				svg.append("path").datum(topojson.mesh(ok, ok.objects.provincesnew, function(a, b) {
+					return a !== b;
+				})).attr("class", "Nom_Provin-border").attr("d", path);
+
+				d3.selectAll("input").on("change", function change() {
+					var value = this.value;
+
+					d3.selectAll("path").style("fill", function(d) {
+						switch (value) {
+							case "1":
+							return color(d.properties.s);
+								break;
+							case "2":
+								return color(d.properties.h);
+								break;
+							case "3":
+								return color(d.properties.n);
+								break;
+							case "4":
+								return color(d.properties.tt);
+								break;
+							case "5":
+								return color(d.properties.tu);
+								break;
+							case "6":
+								return color(d.properties.u);
+								break;
+							case "7":
+								return color(d.properties.d);
+								break;
+						}
+					});
+				});
+			});
+			
+			var svg = d3.select("svg");
+
+			svg.append("g")
+				.attr("class", "legendLog")
+				.attr("transform", "translate(0,100)");
+			
+			var legendV = d3.legend.color()
+									.title("Cas contaminés")
+									.shapeHeight(20)
+                					.shapeWidth(90)
+                					.shapeRadius(10)
+									.labels(["0","1 à 10","10 à 20","20 à 50","50 à 100"])
+                					.orient("vertical")
+                					.labelFormat(d3.format(".00f"))
+                					.labelAlign("start")
+									.scale(color);
+			svg.select(".legendLog")
+				.call(legendV);
+
+					d3.select(self.frameElement).style("height", height + "px");
+
+		</script>
+
+	</body>
+</html>
